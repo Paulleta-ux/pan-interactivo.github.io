@@ -126,14 +126,15 @@
 <script>
 /* =====================  CONFIGURACIÓN  =====================
    Carpeta "img" junto a este archivo. El nombre puede ir con o sin extensión
-   (se prueba png, jpg, jpeg, webp) y también se prueban variantes con
-   espacios, guion bajo (_) y guion (-). Si no se encuentra, se muestra un wireframe. */
+   (se prueba png, jpg, jpeg, webp). También se prueban solas las variantes con
+   espacio, guion bajo (_), guion (-) y minúsculas: "Pan 1", "Pan_1", "pan-1"...
+   Si no se encuentra ninguna, se muestra un wireframe con la ruta que busca. */
 const FRAMES = [
-  'img/Pan_1',
-  'img/Pan_2',
-  'img/Pan_3',
-  'img/Pan_4',
-  'img/Pan_5',
+  'img/Pan 1',
+  'img/Pan 2',
+  'img/Pan 3',
+  'img/Pan 4',
+  'img/Pan 5',
 ];
 const FIT_MODE     = 'fit';                // 'fit' = se adapta al tamaño de la imagen (se ve completa) · 'fill' = llena la pantalla y recorta
 const ASPECT       = 'auto';               // 'auto' = proporción de tu primera imagen · o un número, ej. 16/9
@@ -188,7 +189,8 @@ function wireframe(i) {
     <path d="M0 0L720 512M720 0L0 512" stroke="#ffffff22" stroke-width="2"/>
     ${shapes}
     <text x="360" y="60" fill="#fff" font-family="sans-serif" font-size="28" text-anchor="middle">FRAME ${i + 1}${tag}</text>
-    <text x="360" y="480" fill="#ffffffaa" font-family="sans-serif" font-size="18" text-anchor="middle">${FRAMES[i]}</text>
+    <rect x="110" y="436" width="500" height="50" rx="25" fill="#000000aa"/>
+    <text x="360" y="468" fill="#fff" font-family="sans-serif" font-size="22" text-anchor="middle">Ruta: ${FRAMES[i]}.png</text>
   </svg>`;
   return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
 }
@@ -197,9 +199,15 @@ function wireframe(i) {
 const EXTS = ['png', 'jpg', 'jpeg', 'webp'];
 const HAS_EXT = /\.(png|jpe?g|webp|avif|gif)$/i;
 function candidatesFor(base) {
-  const names = [...new Set([base, base.replace(/ /g, '_'), base.replace(/ /g, '-'),
-                             base.toLowerCase(), base.toLowerCase().replace(/[ _]/g, '-')])];
-  return names.flatMap(n => HAS_EXT.test(n) ? [n] : EXTS.map(e => `${n}.${e}`));
+  const slash = base.lastIndexOf('/') + 1;
+  const dir = base.slice(0, slash);
+  const m = base.slice(slash).match(/^(.*?)(\.(?:png|jpe?g|webp|avif|gif))?$/i);
+  const name = m[1], ext = m[2];
+  const tokens = name.split(/[ _-]+/).filter(Boolean);
+  const names = new Set([name]);
+  for (const t of [tokens, tokens.map(x => x.toLowerCase())])
+    for (const sep of [' ', '_', '-', '']) names.add(t.join(sep));
+  return [...names].flatMap(n => ext ? [dir + n + ext] : EXTS.map(e => `${dir}${n}.${e}`));
 }
 const imgs = FRAMES.map((base, i) => {
   const img = new Image();
